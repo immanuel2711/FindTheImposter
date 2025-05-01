@@ -28,16 +28,21 @@ io.on("connection", (socket) => {
   socket.on("joinRoom", (roomId, playerName) => {
     if (!rooms[roomId]) rooms[roomId] = [];
 
-    // Add player to room
-    rooms[roomId].push({ id: socket.id, name: playerName });
+    // Check if the player is already in the room
+    const playerExists = rooms[roomId].some((player) => player.id === socket.id);
 
-    // Join the room
-    socket.join(roomId);
+    if (!playerExists) {
+      // Add player to room if not already present
+      rooms[roomId].push({ id: socket.id, name: playerName });
 
-    // Notify all players in the room
-    io.to(roomId).emit("roomUpdate", rooms[roomId]);
+      // Join the room
+      socket.join(roomId);
 
-    console.log(`${playerName} joined room ${roomId}`);
+      // Notify all players in the room
+      io.to(roomId).emit("roomUpdate", rooms[roomId]);
+
+      console.log(`${playerName} joined room ${roomId}`);
+    }
   });
 
   // When a user disconnects
