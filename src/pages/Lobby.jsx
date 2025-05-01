@@ -1,46 +1,64 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
-import { io } from "socket.io-client";
+import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import io from "socket.io-client";
 
-const socket = io("http://localhost:5000"); // Ensure this matches the backend server URL
+const socket = io("http://localhost:5000");
 
 export default function Lobby() {
   const { roomId } = useParams();
-  const [searchParams] = useSearchParams();
-  const playerName = searchParams.get("name");
+  const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
+  const [playerName, setPlayerName] = useState(""); // get from URL or state
+  const [isHost, setIsHost] = useState(false);
 
   useEffect(() => {
-    // Debugging: Log when joining the room
-    console.log(`Joining room ${roomId} as ${playerName}`);
+    const queryParams = new URLSearchParams(window.location.search);
+    const name = queryParams.get("name");
+    setPlayerName(name);
 
-    // Emit event to the server to join the room
-    socket.emit("joinRoom", roomId, playerName);
+    socket.emit("joinRoom", roomId, name);
 
-    // Listen for room updates (new players joining, etc.)
-    socket.on("roomUpdate", (roomPlayers) => {
-      console.log("Room players updated:", roomPlayers); // Debugging line
-      setPlayers(roomPlayers);
+    socket.on("roomUpdate", (playerList) => {
+      setPlayers(playerList);
+
+      // First player in the list is host
+      if (playerList.length > 0 && playerList[0].name === name) {
+        setIsHost(true);
+      } else {
+        setIsHost(false);
+      }
+    });
+
+    socket.on("gameStarted", () => {
+      navigate(`/game/${roomId}`);
     });
 
     return () => {
-      socket.off("roomUpdate"); // Clean up the event listener on unmount
+      socket.off("roomUpdate");
+      socket.off("gameStarted");
     };
-  }, [roomId, playerName]);
+  }, [roomId]);
+
+  const startGame = () => {
+    socket.emit("startGame", roomId);
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold mb-4">Lobby - Room ID: {roomId}</h1>
-        <p className="text-gray-400">👤 You are: <strong>{playerName}</strong></p>
-
-        <h2 className="mt-4 text-xl">Players in this room:</h2>
-        <ul className="mt-4 text-gray-400">
-          {players.map((player) => (
-            <li key={player.id}>{player.name}</li>
-          ))}
-        </ul>
-      </div>
+    <div className="p-4">
+      <h2 className="text-xl font-bold">Room: {roomId}</h2>
+      <ul className="my-4">
+        {players.map((player) => (
+          <li key={player.id}>{player.name}</li>
+        ))}
+      </ul>
+      {isHost && (
+        <button
+          onClick={startGame}
+          className="px-4 py-2 bg-green-500 text-white rounded"
+        >
+          Start Game
+        </button>
+      )}
     </div>
   );
 }

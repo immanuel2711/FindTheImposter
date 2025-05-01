@@ -44,6 +44,11 @@ io.on("connection", (socket) => {
       console.log(`${playerName} joined room ${roomId}`);
     }
   });
+  socket.on("startGame", (roomId) => {
+    console.log(`Game started in room: ${roomId}`);
+    io.to(roomId).emit("gameStarted");
+  });
+  
 
   // When a user disconnects
   socket.on("disconnect", () => {
