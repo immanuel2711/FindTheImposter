@@ -1,12 +1,17 @@
-import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 export default function Game() {
-  const { roomId } = useParams();
+  const location = useLocation();
+  const { role, clue, secretWord } = location.state || {};
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Game Started!</h1>
-      <p className="text-gray-600">Room ID: {roomId}</p>
-      {/* Game logic will go here */}
+    <div className="p-4">
+      <h2 className="text-xl font-bold">Your Role: {role}</h2>
+      {role === "Imposter" ? (
+        <p>Your First clue: {clue}</p>
+      ) : (
+        <p>The secret word is: {secretWord}</p>
+      )}
     </div>
   );
 }

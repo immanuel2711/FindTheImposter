@@ -44,11 +44,34 @@ io.on("connection", (socket) => {
       console.log(`${playerName} joined room ${roomId}`);
     }
   });
+
+  // Start the game
   socket.on("startGame", (roomId) => {
-    console.log(`Game started in room: ${roomId}`);
-    io.to(roomId).emit("gameStarted");
+    console.log(`Game starting in room: ${roomId}`);
+
+    // Generate random roles and clues
+    const rolesAndClues = rooms[roomId].map((player, index) => {
+      let role = "";
+      let clue = "";
+
+      if (index === 0) {
+        role = "Imposter"; // First player is the Imposter
+        clue = "It can walk"; // Imposter's vague clue
+      } else {
+        role = "Clue Giver"; // Rest are Clue Givers
+        clue = "It has a trunk"; // Clue Givers' clues
+      }
+
+      return { id: player.id, name: player.name, role: role, clue: clue };
+    });
+
+    const secretWord = "elephant"; // Sample word
+
+    console.log("Roles and clues generated for players:", rolesAndClues);
+
+    // Emit the roles, clues, and secretWord to all players
+    io.to(roomId).emit("gameStarted", rolesAndClues, secretWord);
   });
-  
 
   // When a user disconnects
   socket.on("disconnect", () => {
